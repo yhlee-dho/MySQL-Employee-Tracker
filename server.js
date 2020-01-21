@@ -13,3 +13,8 @@ const connection = mysql.createConnection({
     password: { sqlPassword },
     database: "cms"
 });
+
+connection.connect(function(err) {
+    if (err) throw err;
+    runSearch();
+});
