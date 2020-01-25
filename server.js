@@ -50,25 +50,26 @@ async function getManagerNames() {
     return employeeNames
 }
 
-// get manager id
-async function getManagerId() {
-    let query = "SELECT * FROM employee WHERE manager_id IS NULL"
-    const rows = await connection.query(query)
-    console.log("row.length " + rows.length)
+// get employee names
+async function getEmployeeNames() {
+    let query = "SELECT * FROM employee";
 
-    let employeeIds = []
-    // for(const employee of rows) {
-    //     employeeIds.push(employee.first_name + " " + employee.last_name)
-    // }
-    return employeeIds
-}
-// get employee name
-async function getEmployeeName() {
-    
+    const rows = await db.query(query);
+    let employeeNames = [];
+    for(const employee of rows) {
+        employeeNames.push(employee.first_name + " " + employee.last_name);
+    }
+    return employeeNames;
 }
 // get employee id
-async function getEmployeeId () {
+async function getEmployeeId(fullName) {
+    // parse name into first and last name
+    let employee = getFirstAndLastName(fullName);
 
+    let query = 'SELECT id FROM employee WHERE employee.first_name=? AND employee.last_name=?';
+    let args=[employee[0], employee[1]];
+    const rows = await db.query(query, args);
+    return rows[0].id;
 }
 // get roles
 async function getRoles() {
@@ -84,25 +85,88 @@ async function getRoles() {
     return roles
 }
 // get role id
-async function getRoleId() {
-
+async function getRoleId(roleName) {
+    let query = "SELECT * FROM role WHERE role.title=?";
+    let args = [roleName];
+    const rows = await db.query(query, args);
+    return rows[0].id;
 }
 // get department names
 async function getDepartmentNames() {
+    let query = "SELECT name FROM department";
+    const rows = await db.query(query);
+    //console.log("Number of rows returned: " + rows.length);
 
+    let departments = [];
+    for(const row of rows) {
+        departments.push(row.name);
+    }
+
+    return departments;
 }
 // get department id
-async function getDepartmentId() {
-
+async function getDepartmentId(departmentName) {
+    let query = "SELECT * FROM department WHERE department.name=?";
+    let args = [departmentName];
+    const rows = await db.query(query, args);
+    return rows[0].id;
 }
 
 // add department
-async function addDepartment() {
-
+async function addDepartment(departmentInfo) {
+    const departmentName = departmentInfo.departmentName;
+    let query = 'INSERT into department (name) VALUES (?)';
+    let args = [departmentName];
+    const rows = await db.query(query, args);
+    console.log(`Added department named ${departmentName}`);
+}
+// get departmentInfo
+async function getDepartmentInfo() {
+    return inquirer
+    .prompt([
+        {
+            type: "input",
+            message: "What is the name of the new department?",
+            name: "departmentName"
+        }
+    ])
 }
 // add role
-async function addRole() {
-
+async function addRole(roleInfo) {
+    // INSERT into role (title, salary, department_id) VALUES ("TITLE", 9999999, 1);
+    const departmentId = await getDepartmentId(roleInfo.departmentName);
+    const salary = roleInfo.salary;
+    const title = roleInfo.roleName;
+    let query = 'INSERT into role (title, salary, department_id) VALUES (?,?,?)';
+    let args = [title, salary, departmentId];
+    const rows = await db.query(query, args);
+    console.log(`Added role ${title}`);
+}
+// get roleInfo
+async function getRoleInfo() {
+    const departments = await getDepartmentNames();
+    return inquirer
+    .prompt([
+        {
+            type: "input",
+            message: "What is the title of the new role?",
+            name: "roleName"
+        },
+        {
+            type: "input",
+            message: "What is the salary of the new role?",
+            name: "salary"
+        },
+        {
+            type: "list",
+            message: "Which department uses this role?",
+            name: "departmentName",
+            choices: [
+                // populate from db
+                ...departments
+            ]
+        }
+    ])
 }
 // add employee
 async function addEmployee() {
